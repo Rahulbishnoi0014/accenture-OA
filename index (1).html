@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Accenture OA Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column — progress header, filter bar, then numbered rows grouped by phase */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --ink:#1d2421; --muted:#5f6b66; --line:#dde2df;
+  --accent:#1f5f8b; --accent-soft:#e3eef6; --done:#2e7d4f; --done-soft:#e4f2e9; --hot:#b4532a; --hot-soft:#f8ebe4;
+  --dsa:#1f5f8b; --sql:#7a4fa3; --web:#a0661c;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121614; --surface:#1a201d; --ink:#e6ebe8; --muted:#9aa6a0; --line:#2c3531;
+  --accent:#7fb4dc; --accent-soft:#1d2c38; --done:#72c393; --done-soft:#1a2c22; --hot:#e59a74; --hot-soft:#33231b;
+  --dsa:#7fb4dc; --sql:#bb97de; --web:#dfae63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1a201d; --ink:#e6ebe8; --muted:#9aa6a0; --line:#2c3531;
+  --accent:#7fb4dc; --accent-soft:#1d2c38; --done:#72c393; --done-soft:#1a2c22; --hot:#e59a74; --hot-soft:#33231b;
+  --dsa:#7fb4dc; --sql:#bb97de; --web:#dfae63; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+h1{font-size:1.6rem;margin:0 0 4px;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 20px;max-width:65ch}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat .lab{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat .num{font-family:var(--mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums}
+.bar{height:5px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--done);width:0;transition:width .3s}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding-block:8px;z-index:2}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible,.row input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toggle{margin-left:auto;font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+.save{font-size:.8rem;color:var(--muted);min-height:1.2em;margin-bottom:10px}
+section{margin-top:22px}
+section h2{font-size:1rem;margin:0 0 2px;display:flex;gap:8px;align-items:baseline}
+section h2 .count{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-weight:500}
+section .note{color:var(--muted);font-size:.85rem;margin:0 0 8px}
+.priority{background:var(--hot-soft);border:1px solid color-mix(in srgb,var(--hot) 35%,transparent);border-radius:10px;padding:14px 14px 8px}
+.priority h2{color:var(--hot)}
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:26px 44px minmax(0,1fr);gap:4px 8px;align-items:start;padding:10px 4px;border-top:1px solid var(--line)}
+.priority .row{border-top-color:color-mix(in srgb,var(--hot) 20%,transparent)}
+.row:first-child{border-top:0}
+.row input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--done);cursor:pointer}
+.row .n{font-family:var(--mono);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}
+.row.done .t{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+.row.done .n{color:var(--done)}
+.t{font-weight:600}
+.meta{font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:2px}
+.sec{font-family:var(--mono);font-size:.72rem;font-weight:600;letter-spacing:.04em;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
+.sec.DSA{color:var(--dsa)}.sec.SQL{color:var(--sql)}.sec.Web{color:var(--web)}
+.lv.Medium{color:var(--hot)}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.links a{font-size:.8rem;text-decoration:none;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:2px 8px}
+.links a:hover{text-decoration:underline}
+.links a.stmt{color:var(--hot);background:var(--hot-soft)}
+.when{font-family:var(--mono);font-size:.75rem;color:var(--done)}
+.empty{color:var(--muted);font-size:.9rem;padding:8px 4px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Accenture OA Tracker</h1>
+  <p class="sub">103 questions in one order. Finish the 13 in "Do first" before anything else: they are the questions recent Accenture tests actually asked. Tick each one when you have solved it yourself without looking.</p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="controls" role="toolbar" aria-label="Filter questions">
+    <button class="chip" data-f="all" aria-pressed="true">All</button>
+    <button class="chip" data-f="DSA" aria-pressed="false">DSA</button>
+    <button class="chip" data-f="SQL" aria-pressed="false">SQL</button>
+    <button class="chip" data-f="Web" aria-pressed="false">Web</button>
+    <label class="toggle"><input type="checkbox" id="hideDone"> Hide done</label>
+  </div>
+  <div class="save" id="save" aria-live="polite"></div>
+
+  <div id="groups"></div>
+</div>
+
+<script>
+const DOC = "https://claude.ai/code/artifact/82c8a17b-016d-4f8b-892a-8b2df982187d";
+const LC = s => "https://leetcode.com/problems/" + s + "/";
+// [section, title, pattern, level, source, links "num|name|slug;...", statement note or ""]
+const GROUPS = [
+ {id:"first", title:"Do first", note:"Asked in recent Accenture OAs (2026 reports), most repeated first.", cls:"priority", rows:[
+  ["DSA","Digit sum to a single digit (38 → 11 → 2)","Digit loop","Easy","Asked 3×","258|Add Digits|add-digits;1945|Sum of Digits of String After Convert|sum-of-digits-of-string-after-convert",""],
+  ["Web","Password matcher: password vs confirm password","DOM + if/else","Easy","Asked 2×","2299|Strong Password Checker II|strong-password-checker-ii","Question bank W1"],
+  ["SQL","Vehicles that were never rented","LEFT JOIN + IS NULL","Easy","NITW 2026","183|Customers Who Never Order|customers-who-never-order;1581|Customer Who Visited but Did Not Make Any Transactions|customer-who-visited-but-did-not-make-any-transactions",""],
+  ["SQL","Players over 30 in Kolkata Knight Riders (Indian team)","INNER JOIN + WHERE","Easy","Asked 2×","175|Combine Two Tables|combine-two-tables;1068|Product Sales Analysis I|product-sales-analysis-i",""],
+  ["Web","Currency converter with given rates and toFixed(2)","DOM + validation","Easy","Asked 2×","2635|Apply Transform Over Each Element|apply-transform-over-each-element-in-array","Question bank W3"],
+  ["DSA","Minimum increase in experience multiplier K","Sort ratios / binary search","Medium","Asked 2×","875|Koko Eating Bananas|koko-eating-bananas;215|Kth Largest Element|kth-largest-element-in-an-array","DSA list #5"],
+  ["DSA","Spiral matrix","Matrix boundaries","Medium","Recent OA","54|Spiral Matrix|spiral-matrix;59|Spiral Matrix II|spiral-matrix-ii",""],
+  ["Web","Floor labels: 1st, 2nd, 3rd, 4th floor","if/else ladder","Easy","ISM 2026","412|Fizz Buzz|fizz-buzz","Question bank W2"],
+  ["SQL","Basic GROUP BY + ORDER BY query","GROUP BY","Easy","Recent OA","1729|Find Followers Count|find-followers-count;596|Classes More Than 5 Students|classes-more-than-5-students",""],
+  ["DSA","Word transformation by length","Split, transform, join","Easy","Patterns PDF","824|Goat Latin|goat-latin;2129|Capitalize the Title|capitalize-the-title","DSA list #2"],
+  ["DSA","Character frequency × ASCII with divisibility","Hashing","Easy","Patterns PDF","451|Sort Characters By Frequency|sort-characters-by-frequency;387|First Unique Character|first-unique-character-in-a-string","DSA list #3"],
+  ["SQL","Top 3 salaries in every department","Window function","Medium","Patterns PDF","185|Department Top Three Salaries|department-top-three-salaries;178|Rank Scores|rank-scores",""],
+  ["Web","Counter, theme toggle, create/remove elements","Events + classList","Easy","Patterns PDF","2620|Counter|counter;2665|Counter II|counter-ii",""]
+ ]},
+ {id:"dsa-num", title:"DSA: numbers and digits", rows:[
+  ["DSA","Count carries when adding two numbers","Digit-wise addition","Easy","PDF 8","415|Add Strings|add-strings","DSA list #6"],
+  ["DSA","Encode number by squaring digits (34 → 916)","Digit loop","Easy","PDF 14","1281|Subtract Product and Sum of Digits|subtract-the-product-and-sum-of-digits-of-an-integer","DSA list #7"],
+  ["DSA","Googly prime: is the digit sum prime?","Digit sum + prime","Easy","PDF 19","2180|Count Integers With Even Digit Sum|count-integers-with-even-digit-sum","DSA list #8"],
+  ["DSA","Autobiographical number","Digit count","Easy","PDF 3","2283|Equal Digit Count and Digit Value|check-if-number-has-equal-digit-count-and-digit-value",""],
+  ["DSA","Palindrome numbers in a range","Reverse a number","Easy","PDF 10","9|Palindrome Number|palindrome-number",""],
+  ["DSA","Binary ↔ decimal conversion","Base conversion","Easy","PDF 5, 9","1290|Binary Number in Linked List to Integer|convert-binary-number-in-a-linked-list-to-integer;504|Base 7|base-7",""],
+  ["DSA","Sum of binary digits","Popcount","Easy","PDF 57","191|Number of 1 Bits|number-of-1-bits",""],
+  ["DSA","Rearrangement of bits (smallest value)","Count set bits","Easy","PDF 43","2429|Minimize XOR|minimize-xor","DSA list #13"],
+  ["DSA","Maximum exponent of 2 in a range","Trailing zero bits","Easy","PDF 28","231|Power of Two|power-of-two","DSA list #14"],
+  ["DSA","Magical numbers from 1 to N","Bits","Medium","PDF 26","338|Counting Bits|counting-bits","DSA list #15"],
+  ["DSA","Sum of numbers divisible by 3 and 5","Loop + modulo","Easy","PDF 56","2652|Sum Multiples|sum-multiples","DSA list #16"],
+  ["DSA","Sum of divisors","Loop to √n","Easy","PDF 59","507|Perfect Number|perfect-number","DSA list #17"],
+  ["DSA","Sum of primes below N","Sieve","Easy","PDF 60","204|Count Primes|count-primes","DSA list #18"],
+  ["DSA","Fibonacci series and n-th Fibonacci","Iteration","Easy","PDF 64, 66","509|Fibonacci Number|fibonacci-number;70|Climbing Stairs|climbing-stairs",""],
+  ["DSA","Operation choices (+ − × ÷ by c)","if/else","Easy","PDF 37","412|Fizz Buzz|fizz-buzz","DSA list #20"],
+  ["DSA","Multiplication table and its sum","Loop","Easy","PDF 61","412|Fizz Buzz|fizz-buzz","DSA list #21"],
+  ["DSA","Floyd's triangle","Nested loops","Easy","PDF 18","118|Pascal's Triangle|pascals-triangle","DSA list #22"],
+  ["DSA","Sum of distances between three points","Formula","Easy","PDF 11","1266|Minimum Time Visiting All Points|minimum-time-visiting-all-points","DSA list #23"],
+  ["DSA","Roots of a quadratic equation","Formula","Easy","PDF 49","","DSA list #24"],
+  ["DSA","Standard deviation","Formula","Easy","PDF 54","1491|Average Salary Excluding Min and Max|average-salary-excluding-the-minimum-and-maximum-salary","DSA list #25"]
+ ]},
+ {id:"dsa-arr", title:"DSA: arrays", rows:[
+  ["DSA","Count elements within diff of num","Single pass","Easy","PDF 1","1385|Find the Distance Value Between Two Arrays|find-the-distance-value-between-two-arrays","DSA list #26"],
+  ["DSA","Maximum element and its index","Single pass","Easy","PDF 30, 32","747|Largest Number At Least Twice of Others|largest-number-at-least-twice-of-others","DSA list #27"],
+  ["DSA","Second largest element","Tracking two maxima","Easy","PDF 51","414|Third Maximum Number|third-maximum-number",""],
+  ["DSA","LargeSmallSum (even/odd positions)","Index parity + sort","Easy","PDF 21","414|Third Maximum Number|third-maximum-number","DSA list #29"],
+  ["DSA","SmallLargeSum / Matrix (even/odd positions)","Index parity + sort","Easy","PDF 27, 53","905|Sort Array By Parity|sort-array-by-parity","DSA list #30"],
+  ["DSA","Label each number odd or even","Modulo","Easy","PDF 40","905|Sort Array By Parity|sort-array-by-parity","DSA list #31"],
+  ["DSA","Occurrences of each element","Hash map","Easy","PDF 12","1207|Unique Number of Occurrences|unique-number-of-occurrences","DSA list #32"],
+  ["DSA","Missing number","Sum formula / XOR","Easy","PDF 16","268|Missing Number|missing-number",""],
+  ["DSA","Remove duplicates","Set / two pointers","Easy","PDF 67","26|Remove Duplicates from Sorted Array|remove-duplicates-from-sorted-array;217|Contains Duplicate|contains-duplicate",""],
+  ["DSA","Intersection of two arrays","Hash set","Easy","PDF 20","349|Intersection of Two Arrays|intersection-of-two-arrays;350|Intersection of Two Arrays II|intersection-of-two-arrays-ii",""],
+  ["DSA","Merge two sorted arrays","Two pointers","Easy","PDF 33","88|Merge Sorted Array|merge-sorted-array",""],
+  ["DSA","Days the stock price fell","Compare neighbours","Easy","PDF 36","2110|Number of Smooth Descent Periods|number-of-smooth-descent-periods-of-a-stock","DSA list #37"],
+  ["DSA","Sum of even indices after reversing","Index arithmetic","Easy","PDF 58","1470|Shuffle the Array|shuffle-the-array","DSA list #38"],
+  ["DSA","Rat count house","Running sum","Easy","PDF 42","1480|Running Sum of 1d Array|running-sum-of-1d-array","DSA list #39"],
+  ["DSA","Equilibrium index","Prefix sum","Easy","PDF 15","724|Find Pivot Index|find-pivot-index;1991|Find the Middle Index in Array|find-the-middle-index-in-array",""],
+  ["DSA","Elevation point (peak)","Max / binary search","Easy","PDF 13","852|Peak Index in a Mountain Array|peak-index-in-a-mountain-array;162|Find Peak Element|find-peak-element",""],
+  ["DSA","Product of the two smallest","Sort / two minima","Easy","PDF 41","1913|Max Product Difference Between Two Pairs|maximum-product-difference-between-two-pairs","DSA list #42"],
+  ["DSA","Pair with target sum and max product","Sort + two pointers","Easy","PDF 38","1|Two Sum|two-sum;167|Two Sum II|two-sum-ii-input-array-is-sorted","DSA list #43"],
+  ["DSA","Chocolate distribution","Sort + window","Easy","PDF 7","1984|Min Difference of K Scores|minimum-difference-between-highest-and-lowest-of-k-scores",""],
+  ["DSA","Rotate array by k","Reverse three times","Medium","PDF 50","189|Rotate Array|rotate-array",""],
+  ["DSA","Bulb switch","Flip parity","Medium","PDF 6","1529|Minimum Suffix Flips|minimum-suffix-flips",""],
+  ["DSA","Maximum gap","Sort","Medium","PDF 65","164|Maximum Gap|maximum-gap",""]
+ ]},
+ {id:"dsa-str", title:"DSA: strings", rows:[
+  ["DSA","Reverse a string","Two pointers","Easy","PDF 47","344|Reverse String|reverse-string",""],
+  ["DSA","Reverse word order","Split","Easy","PDF 48","151|Reverse Words in a String|reverse-words-in-a-string",""],
+  ["DSA","Repeat a string N times","String building","Easy","PDF 44","686|Repeated String Match|repeated-string-match","DSA list #50"],
+  ["DSA","First K words","Split","Easy","PDF 17","1816|Truncate Sentence|truncate-sentence",""],
+  ["DSA","Length of last word","Scan from end","Easy","PDF 22","58|Length of Last Word|length-of-last-word",""],
+  ["DSA","Longest word in a list","Max by length","Easy","PDF 25","2114|Max Number of Words in Sentences|maximum-number-of-words-found-in-sentences","DSA list #53"],
+  ["DSA","Anagram check","Frequency count","Easy","PDF 2","242|Valid Anagram|valid-anagram;383|Ransom Note|ransom-note",""],
+  ["DSA","Most frequent vowel","Frequency count","Easy","PDF 34, 63","3541|Most Frequent Vowel and Consonant|find-most-frequent-vowel-and-consonant","DSA list #55"],
+  ["DSA","Swap two characters everywhere","Character mapping","Easy","PDF 45","205|Isomorphic Strings|isomorphic-strings","DSA list #56"],
+  ["DSA","Move hyphens to the front","Stable partition","Easy","PDF 35","283|Move Zeroes|move-zeroes","DSA list #57"],
+  ["DSA","Password checker","Character checks","Easy","PDF 39","2299|Strong Password Checker II|strong-password-checker-ii","DSA list #58"],
+  ["DSA","Binary operations string (A/B/C)","Left-to-right evaluation","Easy","PDF 4","2011|Final Value After Operations|final-value-of-variable-after-performing-operations","DSA list #59"],
+  ["DSA","String decoder (runs of 1s → letters)","Split on 0","Easy","PDF 55","1309|Decrypt String from Alphabet to Integer Mapping|decrypt-string-from-alphabet-to-integer-mapping","DSA list #60"],
+  ["DSA","Vowel permutation","Factorial counting","Medium","PDF 62","2785|Sort Vowels in a String|sort-vowels-in-a-string","DSA list #61"],
+  ["DSA","Max favourite songs in a window of K","Fixed sliding window","Easy","PDF 29","1456|Max Vowels in a Substring of Given Length|maximum-number-of-vowels-in-a-substring-of-given-length",""],
+  ["DSA","Longest substring without repeating characters","Sliding window + set","Medium","PDF 24","3|Longest Substring Without Repeating Characters|longest-substring-without-repeating-characters",""]
+ ]},
+ {id:"dsa-misc", title:"DSA: linked list and matrix", rows:[
+  ["DSA","Linked list palindrome","Slow/fast pointers","Easy","PDF 23","234|Palindrome Linked List|palindrome-linked-list",""],
+  ["DSA","Set matrix zeroes","Row/column markers","Medium","PDF 52","73|Set Matrix Zeroes|set-matrix-zeroes",""]
+ ]},
+ {id:"sql", title:"SQL: past Accenture questions", note:"From the SQL PDF, easiest pattern first. Each LeetCode link practises the same pattern.", rows:[
+  ["SQL","Debit transactions with amount between 10000 and 50000","Filter","Easy","SQL Q1","1757|Recyclable and Low Fat Products|recyclable-and-low-fat-products",""],
+  ["SQL","Employees with 5+ years' experience who joined after 2001","Filter + date","Easy","SQL Q4","1141|User Activity for the Past 30 Days I|user-activity-for-the-past-30-days-i",""],
+  ["SQL","Books after 1940 in category C102","Filter + date","Easy","SQL Q6","595|Big Countries|big-countries",""],
+  ["SQL","More than 10 leaves of type CL or ML","Filter + IN","Easy","SQL Q9","1757|Recyclable and Low Fat Products|recyclable-and-low-fat-products",""],
+  ["SQL","Staff earning over 50000 (with aliases)","Filter","Easy","SQL Q14","595|Big Countries|big-countries",""],
+  ["SQL","Airbus airplanes","Filter","Easy","SQL Q17","584|Find Customer Referee|find-customer-referee",""],
+  ["SQL","Trains with speed below 50","Filter","Easy","SQL Q22","1757|Recyclable and Low Fat Products|recyclable-and-low-fat-products",""],
+  ["SQL","Categories starting with M","LIKE","Easy","SQL Q7","1527|Patients With a Condition|patients-with-a-condition",""],
+  ["SQL","Messages containing \"Hello\"","LIKE","Easy","SQL Q26","1527|Patients With a Condition|patients-with-a-condition",""],
+  ["SQL","Artists whose name contains a digit","REGEXP","Easy","SQL Q25","1517|Find Users With Valid E-Mails|find-users-with-valid-e-mails",""],
+  ["SQL","Customers with balance ≥ 50000, ordered by first name","Join 2 + ORDER BY","Easy","SQL Q13","175|Combine Two Tables|combine-two-tables",""],
+  ["SQL","Trains starting with M going to PUNE","Join 2 + LIKE","Easy","SQL Q8","1378|Replace Employee ID With Unique Identifier|replace-employee-id-with-the-unique-identifier",""],
+  ["SQL","Students registered in 2012","Join 2 + year","Easy","SQL Q18","1378|Replace Employee ID With Unique Identifier|replace-employee-id-with-the-unique-identifier",""],
+  ["SQL","Cabin crew named A* on flights ending in 1","Join 2 + LIKE","Easy","SQL Q19","175|Combine Two Tables|combine-two-tables",""],
+  ["SQL","Drivers of vehicles In Use with plate ending 0","Join 2 + CONCAT","Easy","SQL Q27","1667|Fix Names in a Table|fix-names-in-a-table",""],
+  ["SQL","Unpaid bills with patient full name, highest first","Join 2 + CONCAT + ORDER BY","Easy","SQL Q15","1667|Fix Names in a Table|fix-names-in-a-table",""],
+  ["SQL","Passengers and baggage per flight to Paris","Join 2 + GROUP BY","Medium","SQL Q20","1729|Find Followers Count|find-followers-count",""],
+  ["SQL","Net pay where basic > 5000","Join 3","Easy","SQL Q3","1280|Students and Examinations|students-and-examinations",""],
+  ["SQL","Employees in the HR department","Join 3","Easy","SQL Q10","1280|Students and Examinations|students-and-examinations",""],
+  ["SQL","House rent allowance for Bangalore or Cochin","Join 3 + IN","Easy","SQL Q11","1251|Average Selling Price|average-selling-price",""],
+  ["SQL","Courses taught on Wednesday","Join 3","Easy","SQL Q5","1280|Students and Examinations|students-and-examinations",""],
+  ["SQL","Flights operated by Singapore Airlines","Join 3","Easy","SQL Q16","1251|Average Selling Price|average-selling-price",""],
+  ["SQL","Customers whose account type starts with \"Sa\"","Join 3 + LIKE + ORDER BY","Medium","SQL Q2","1280|Students and Examinations|students-and-examinations",""],
+  ["SQL","Number of products in category Women","Join 3 + COUNT","Easy","SQL Q21","1251|Average Selling Price|average-selling-price",""],
+  ["SQL","Vegetarian passengers on flight 4 from Hong Kong","Join 3 + DISTINCT","Medium","SQL Q23","1280|Students and Examinations|students-and-examinations",""],
+  ["SQL","Products in transit","Join 3 + DISTINCT","Easy","SQL Q24","1251|Average Selling Price|average-selling-price",""],
+  ["SQL","Drivers rated ≥ 4.5 with non-cancelled bookings","Join 3 + <>","Medium","SQL Q28","1280|Students and Examinations|students-and-examinations",""],
+  ["SQL","Users with a contact whose job is Engineer","Self-join","Medium","SQL Q30","181|Employees Earning More Than Their Managers|employees-earning-more-than-their-managers;570|Managers with at Least 5 Direct Reports|managers-with-at-least-5-direct-reports",""],
+  ["SQL","Count of each viewer name","GROUP BY","Easy","SQL Q29","1729|Find Followers Count|find-followers-count",""],
+  ["SQL","Average balance per account type ≥ 50000","GROUP BY + HAVING","Medium","SQL Q12","596|Classes More Than 5 Students|classes-more-than-5-students;182|Duplicate Emails|duplicate-emails",""]
+ ]}
+];
+
+// Number every question in one sequence.
+const ALL = [];
+GROUPS.forEach(g => g.rows = g.rows.map(r => {
+  const q = {n: ALL.length + 1, sec:r[0], title:r[1], pat:r[2], lv:r[3], src:r[4],
+    links: r[5] ? r[5].split(";").map(x => x.split("|")) : [], stmt:r[6], group:g.id};
+  ALL.push(q); return q;
+}));
+
+let done = {};          // { "1": "2026-10-08", ... }
+let filter = "all";
+let hideDone = false;
+let store = null;       // "db" | "local"
+let ref = null;
+let writing = Promise.resolve();
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderStats(){
+  const parts = [["Overall", ALL], ["Do first", ALL.filter(q => q.group === "first")],
+    ["DSA", ALL.filter(q => q.sec === "DSA")], ["SQL", ALL.filter(q => q.sec === "SQL")], ["Web", ALL.filter(q => q.sec === "Web")]];
+  $("stats").innerHTML = parts.map(([lab, qs]) => {
+    const d = qs.filter(q => done[q.n]).length, pct = qs.length ? Math.round(d / qs.length * 100) : 0;
+    return `<div class="stat"><div class="lab">${lab}</div><div class="num">${d} / ${qs.length}</div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join("");
+}
+
+function rowHTML(q){
+  const isDone = !!done[q.n];
+  const links = q.links.map(([num, name, slug]) => `<a href="${LC(slug)}" target="_blank" rel="noopener">LC ${num} · ${esc(name)}</a>`);
+  if (q.stmt) links.push(`<a class="stmt" href="${DOC}" target="_blank" rel="noopener">Statement: ${esc(q.stmt)}</a>`);
+  return `<div class="row${isDone ? " done" : ""}">
+    <input type="checkbox" id="q${q.n}" data-n="${q.n}" ${isDone ? "checked" : ""} aria-label="Mark question ${q.n} done">
+    <label class="n" for="q${q.n}">${q.n}</label>
+    <div>
+      <div class="t">${esc(q.title)}</div>
+      <div class="meta"><span class="sec ${q.sec}">${q.sec}</span><span>${esc(q.pat)}</span><span class="lv ${q.lv}">${q.lv}</span><span>${esc(q.src)}</span>${isDone ? `<span class="when">done ${esc(done[q.n])}</span>` : ""}</div>
+      ${links.length ? `<div class="links">${links.join("")}</div>` : ""}
+    </div>
+  </div>`;
+}
+
+function render(){
+  renderStats();
+  $("groups").innerHTML = GROUPS.map(g => {
+    const rows = g.rows.filter(q => (filter === "all" || q.sec === filter) && !(hideDone && done[q.n]));
+    const total = g.rows.filter(q => filter === "all" || q.sec === filter);
+    if (!total.length) return "";
+    const d = total.filter(q => done[q.n]).length;
+    const range = `${total[0].n}–${total[total.length-1].n}`;
+    return `<section class="${g.cls || ""}" aria-label="${esc(g.title)}">
+      <h2>${esc(g.title)} <span class="count">#${range} · ${d}/${total.length} done</span></h2>
+      ${g.note ? `<p class="note">${esc(g.note)}</p>` : ""}
+      <div class="list">${rows.length ? rows.map(rowHTML).join("") : `<div class="empty">All done in this group.</div>`}</div>
+    </section>`;
+  }).join("");
+}
+
+function setNote(t){ $("save").textContent = t; }
+
+function persist(){
+  const snapshot = JSON.parse(JSON.stringify(done));
+  if (store === "db") {
+    writing = writing.then(() => ref.set({done: snapshot, updated: new Date().toISOString()}))
+      .then(() => setNote("Saved."))
+      .catch(e => { setNote(e && e.code === "invalid_argument" ? "You can view this tracker but not save ticks." : "Couldn't save just now. Your tick shows here but may be lost on reload."); });
+  } else {
+    try { localStorage.setItem("acc-oa-done", JSON.stringify(snapshot)); setNote("Saved in this browser only."); }
+    catch { setNote("Ticks can't be saved in this view."); }
+  }
+}
+
+document.addEventListener("change", e => {
+  if (e.target.id === "hideDone") { hideDone = e.target.checked; render(); return; }
+  const n = e.target.dataset && e.target.dataset.n;
+  if (!n) return;
+  if (e.target.checked) done[n] = new Date().toISOString().slice(0, 10); else delete done[n];
+  render(); persist();
+});
+document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+  render();
+}));
+
+// Local fallback first so the page is useful immediately.
+try { done = JSON.parse(localStorage.getItem("acc-oa-done") || "{}") || {}; } catch { done = {}; }
+render();
+
+(async () => {
+  const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+  if (!db) { store = "local"; setNote("Ticks are saved in this browser only."); return; }
+  store = "db";
+  ref = db.doc("progress/main");
+  let first = true;
+  ref.onSnapshot(snap => {
+    const body = snap.exists ? snap.data() : null;
+    if (body && body.done && typeof body.done === "object") done = {...body.done};
+    else if (first && Object.keys(done).length) persist();   // carry over ticks made before the store answered
+    first = false;
+    render();
+  }, () => { store = "local"; setNote("Saving is unavailable right now; ticks are kept in this browser."); });
+})();
+</script>
+</body>
+</html>
